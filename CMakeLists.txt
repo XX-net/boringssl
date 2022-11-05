@@ -309,6 +309,7 @@ if(BUILD_SHARED_LIBS)
   # some library targets are OBJECT libraries.
   set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 if(MSAN)
   if(NOT CLANG)

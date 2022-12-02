@@ -100,7 +100,7 @@ if(BORINGSSL_PREFIX AND BORINGSSL_PREFIX_SYMBOLS)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/symbol_prefix_include
     COMMAND ${GO_EXECUTABLE} run ${CMAKE_CURRENT_SOURCE_DIR}/util/make_prefix_headers.go -out ${CMAKE_CURRENT_BINARY_DIR}/symbol_prefix_include ${BORINGSSL_PREFIX_SYMBOLS}
     DEPENDS util/make_prefix_headers.go
-            ${CMAKE_BINARY_DIR}/${BORINGSSL_PREFIX_SYMBOLS})
+            ${BORINGSSL_PREFIX_SYMBOLS})
 
   # add_dependencies needs a target, not a file, so we add an intermediate
   # target.

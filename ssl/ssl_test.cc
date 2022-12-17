@@ -2267,6 +2267,8 @@ XRqE7XFhHL+7TNC2a9OOAjQsEF137YPWo+rhgko=
   ASSERT_TRUE(X509_STORE_add_cert(store.get(), root.get()));
   SSL_CTX_set_cert_store(client_ctx.get(), store.release());
   SSL_CTX_set_verify(client_ctx.get(), SSL_VERIFY_PEER, nullptr);
+  X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(client_ctx.get()),
+                              X509_V_FLAG_NO_CHECK_TIME);
   static const char kSecretName[] = "secret.example";
   ASSERT_TRUE(X509_VERIFY_PARAM_set1_host(SSL_CTX_get0_param(client_ctx.get()),
                                           kSecretName, strlen(kSecretName)));
@@ -8117,6 +8119,8 @@ RVHWbCvFvNZAoWiIJ2z34RLGInyZvCZ8xLAvsuaWULDDaoeDl1M0t4Hm
   SSL_CTX_set_verify(client_ctx.get(),
                      SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                      nullptr);
+  X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(client_ctx.get()),
+                              X509_V_FLAG_NO_CHECK_TIME);
 
   struct TestCase {
     X509 *cert;
@@ -8496,6 +8500,24 @@ TEST(SSLTest, QuietShutdown) {
   ret = SSL_read(server.get(), buf, sizeof(buf));
   EXPECT_EQ(ret, 0);
   EXPECT_EQ(SSL_get_error(server.get(), ret), SSL_ERROR_ZERO_RETURN);
+}
+
+TEST(SSLTest, InvalidSignatureAlgorithm) {
+  bssl::UniquePtr<SSL_CTX> ctx(SSL_CTX_new(TLS_method()));
+  ASSERT_TRUE(ctx);
+
+  static const uint16_t kInvalidPrefs[] = {1234};
+  EXPECT_FALSE(SSL_CTX_set_signing_algorithm_prefs(
+      ctx.get(), kInvalidPrefs, OPENSSL_ARRAY_SIZE(kInvalidPrefs)));
+  EXPECT_FALSE(SSL_CTX_set_verify_algorithm_prefs(
+      ctx.get(), kInvalidPrefs, OPENSSL_ARRAY_SIZE(kInvalidPrefs)));
+
+  static const uint16_t kDuplicatePrefs[] = {SSL_SIGN_RSA_PKCS1_SHA256,
+                                             SSL_SIGN_RSA_PKCS1_SHA256};
+  EXPECT_FALSE(SSL_CTX_set_signing_algorithm_prefs(
+      ctx.get(), kDuplicatePrefs, OPENSSL_ARRAY_SIZE(kDuplicatePrefs)));
+  EXPECT_FALSE(SSL_CTX_set_verify_algorithm_prefs(
+      ctx.get(), kDuplicatePrefs, OPENSSL_ARRAY_SIZE(kDuplicatePrefs)));
 }
 
 }  // namespace

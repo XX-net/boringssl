@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 # Defer enabling C and CXX languages.
 project(BoringSSL NONE)
@@ -514,13 +514,6 @@ else()
   message(FATAL_ERROR "Unknown processor:" ${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
-if(ANDROID AND NOT ANDROID_NDK_REVISION AND ARCH STREQUAL "arm")
-  # The third-party Android-NDK CMake files somehow fail to set the -march flag
-  # for assembly files. Without this flag, the compiler believes that it's
-  # building for ARMv5.
-  set(CMAKE_ASM_FLAGS "-march=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_ASM_FLAGS}")
-endif()
-
 if(USE_CUSTOM_LIBCXX)
   if(NOT CLANG)
     message(FATAL_ERROR "USE_CUSTOM_LIBCXX only supported with Clang")
@@ -559,9 +552,6 @@ if(USE_CUSTOM_LIBCXX)
     libcxxabi PRIVATE
     -D_LIBCPP_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS
   )
-  set_target_properties(libcxxabi PROPERTIES COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough")
-  # libc++abi depends on libc++ internal headers.
-  set_property(TARGET libcxxabi APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/util/bot/libcxx/src")
   install(TARGETS libcxxabi EXPORT OpenSSLTargets)
 
   add_library(libcxx ${LIBCXX_SOURCES})
@@ -577,6 +567,15 @@ if(USE_CUSTOM_LIBCXX)
     -D_LIBCPP_BUILDING_LIBRARY
     -DLIBCXX_BUILDING_LIBCXXABI
   )
+  set_target_properties(
+    libcxx libcxxabi PROPERTIES
+    COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough"
+    # libc++ and libc++abi must be built in C++20 mode.
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED TRUE
+  )
+  # libc++abi depends on libc++ internal headers.
+  set_property(TARGET libcxx libcxxabi APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/util/bot/libcxx/src")
   target_link_libraries(libcxx libcxxabi)
   install(TARGETS libcxx EXPORT OpenSSLTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()

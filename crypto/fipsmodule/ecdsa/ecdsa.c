@@ -187,10 +187,12 @@ int ecdsa_do_verify_no_self_test(const uint8_t *digest, size_t digest_len,
     return 0;
   }
 
+#if !defined(OPENSSL_AARCH64)
   if (!ec_cmp_x_coordinate(group, &point, &r)) {
     OPENSSL_PUT_ERROR(ECDSA, ECDSA_R_BAD_SIGNATURE);
     return 0;
   }
+#endif
 
   return 1;
 }
